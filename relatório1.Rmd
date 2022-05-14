@@ -86,7 +86,6 @@ summary(M[upper.tri(M)])
 M <- cor(numericas, use = 'complete.obs')
 summary(M[upper.tri(M)])
 corrplot(M, method='circle')
-save(M, file = 'M.rda')
 
 ## Visualizando as correlações
 ggpairs(numericas)
