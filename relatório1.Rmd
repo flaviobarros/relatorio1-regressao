@@ -167,6 +167,7 @@ vif(modelo1)
 ## Detecção de Outliers
 
 ```{r echo=TRUE}
+## Outliers em X
 
 X <- subset(treino, select = -c("forca_compressiva"))
 
@@ -191,8 +192,16 @@ sum((diag(H) < criterio_oulier) & ((diag(H) > 0.2)))
 sum(diag(H) < 0.2) / nrow(X)
 
 ### Temos que todos os valores de diag(H) são inferiores a 0.2
-### Logo, como não temos nenhum caso que precisamos constestar, vamos seguir com o critério alternativo, de que não temos nenhuma observação que deveríamos considerar outlier
 
+### Agora, utilizando a função outliers do pacote car, temos o seguinte:
+### utilizando mesmo modelo que foi utilizado para a análise de multicolinearidade, não temos nenhum ponto que possa ser considerado um outlier
+
+outlierTest(modelo1)
+
+
+### Logo, como em 2 dos 3 testes não temos nenhum ponto identificado como outlier, vamos considerar que não temos nenhuma observação que deveríamos considerar outlier
+
+## Outliers em y
 ```
 
 ## Modelagem
