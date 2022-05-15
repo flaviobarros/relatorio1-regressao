@@ -96,6 +96,26 @@ teste <- dados[-inTrain,]
 treino <- treino[complete.cases(treino),]
 teste <- teste[complete.cases(teste),]
 
+
+## Criando dataset normalizado para avaliar diferença de resultado
+trainData <- treino
+testeData <- teste
+maxTrainFeatures <- apply(trainData[,1:8], 2, max) #max of each feature
+minTrainFeatures <- apply(trainData[,1:8], 2, min) #min of each feature
+
+
+minMaxDiffTrain <- (maxTrainFeatures - minTrainFeatures)
+minMaxDiffTrain
+
+trainData[,1:8] <- sweep(treino[,1:8], 2, minTrainFeatures, "-")
+trainData[,1:8] <- sweep(treino[,1:8], 2, minMaxDiffTrain, "/")
+
+testeData[,1:8] <- sweep(teste[,1:8], 2, minTrainFeatures, "-")
+testeData[,1:8] <- sweep(teste[,1:8], 2, minMaxDiffTrain, "/")
+
+summary(trainData)
+
+
 ## Separando a variavel resposta, categóricas e numericas
 # resposta <- treino$forca_compressiva
 # resposta_teste <- teste$forca_compressiva
@@ -172,8 +192,6 @@ sum(diag(H) < 0.2) / nrow(X)
 
 ### Temos que todos os valores de diag(H) são inferiores a 0.2
 ### Logo, como não temos nenhum caso que precisamos constestar, vamos seguir com o critério alternativo, de que não temos nenhuma observação que deveríamos considerar outlier
-
-
 
 ```
 
