@@ -54,7 +54,7 @@ colnames(dados) <- c("cimento", "escoria", "cinza", "agua", "super_plastificante
 d <- Hmisc::describe(dados)
 ```
 
-$$\begin{spacing}{0.7}
+\begin{spacing}{0.7}
 \begin{center}\textbf{ dados \\ 9 Variables~~~~~ 1030 ~Observations}\end{center}
 \smallskip\hrule\smallskip{\small
 \vbox{\noindent\textbf{cimento}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
