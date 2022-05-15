@@ -204,4 +204,138 @@ outlierTest(modelo1)
 ## Outliers em y
 ```
 
+head(dados)
+colnames(dados)
 ## Modelagem
+```{r echo=TRUE}
+
+f1 <-
+  formula(
+    forca_compressiva ~ cimento + escoria + cinza + agua +
+      super_plastificante + agregador_grosso +
+      agregador_fino + idade
+  )
+
+
+f1_log <-
+  formula(
+    log(forca_compressiva) ~ cimento + escoria + cinza + agua +
+      super_plastificante + agregador_grosso +
+      agregador_fino + idade
+  )
+
+f2 <- formula(
+  forca_compressiva ~ cimento + escoria + cinza + agua +
+    super_plastificante + agregador_grosso + agregador_fino + idade +
+    I(cimento ^ 2) + I(escoria ^ 2) + I(cinza ^ 2) +
+    I(agua ^ 2) + I(super_plastificante ^2) +
+    I(agregador_grosso ^ 2) + I(agregador_fino ^ 2) + I(idade ^ 2)
+  )
+
+f2_log <- formula(
+  log(forca_compressiva) ~ cimento + escoria + cinza + agua +
+    super_plastificante + agregador_grosso + agregador_fino + idade +
+    I(cimento ^ 2) + I(escoria ^ 2) + I(cinza ^ 2) +
+    I(agua ^ 2) + I(super_plastificante ^2) +
+    I(agregador_grosso ^ 2) + I(agregador_fino ^ 2) + I(idade ^ 2)
+  )
+
+formulas <- c(f1, f2)
+
+
+for (f in formulas) {
+  ##model
+  model <- lm(formula = f, data=treino)
+  
+  model_norm <- lm(formula = f, data=normalized_train)
+  
+  ##predicao treino
+  treinoPred     <- predict(model, treino)
+  treinoPredNorm <- predict(model_norm, treino)
+  
+  ##predicao teste
+  testePred     <- predict(model, teste)
+  testePredNorm <- predict(model_norm, normalized_teste)
+  
+  
+  mae_treino  <- round(MAE(treino$forca_compressiva, treinoPred), 3)
+  mae_teste   <- round(MAE(teste$forca_compressiva, testePred), 3)
+  
+  
+  rmse_treino <- round(RMSE(treino$forca_compressiva, treinoPred), 3)
+  rmse_teste  <- round(RMSE(teste$forca_compressiva, testePred), 3)
+  
+  
+  mae_norm_treino  <- round(MAE(normalized_train$forca_compressiva, treinoPredNorm), 3)
+  mae_norm_teste   <- round(MAE(normalized_teste$forca_compressiva, testePredNorm), 3)
+  
+  rmse_norm_treino <- round(RMSE(normalized_train$forca_compressiva, treinoPredNorm), 3)
+  rmse_norm_teste  <- round(RMSE(normalized_teste$forca_compressiva, testePredNorm), 3)
+  
+  print(f)
+  
+  print(paste0('DATASET NÂO NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_treino, ' --  ', mae_teste))
+  print(paste0('RMSE :', rmse_treino, ' -- ', rmse_teste))
+
+  print(paste0('DATASET NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_norm_teste, ' -- ', mae_norm_teste))
+  print(paste0('RMSE :', rmse_norm_treino, ' -- ', rmse_norm_teste))
+  
+  print('MUDANDO DE MODELO')
+  print('')
+  print('')
+  print('')
+
+}
+
+formulas_log <- c(f1_log, f2_log)
+
+for (f in formulas_log) {
+  ##model
+  model <- lm(formula = f, data=treino)
+  
+  model_norm <- lm(formula = f, data=normalized_train)
+  
+  ##predicao treino
+  treinoPred     <- predict(model, treino)
+  treinoPredNorm <- predict(model_norm, treino)
+  
+  ##predicao teste
+  testePred     <- predict(model, teste)
+  testePredNorm <- predict(model_norm, normalized_teste)
+  
+  
+  mae_treino  <- round(MAE(log(treino$forca_compressiva), treinoPred), 3)
+  mae_teste   <- round(MAE(log(teste$forca_compressiva), testePred), 3)
+  
+  
+  rmse_treino <- round(RMSE(log(treino$forca_compressiva), treinoPred), 3)
+  rmse_teste  <- round(RMSE(log(teste$forca_compressiva), testePred), 3)
+  
+  
+  mae_norm_treino  <- round(MAE(log(normalized_train$forca_compressiva), treinoPredNorm), 3)
+  mae_norm_teste   <- round(MAE(log(normalized_teste$forca_compressiva), testePredNorm), 3)
+  
+  rmse_norm_treino <- round(RMSE(log(normalized_train$forca_compressiva), treinoPredNorm), 3)
+  rmse_norm_teste  <- round(RMSE(log(normalized_teste$forca_compressiva), testePredNorm), 3)
+  
+  print(f)
+  
+  print(paste0('DATASET NÂO NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_treino, ' --  ', mae_teste))
+  print(paste0('RMSE :', rmse_treino, ' -- ', rmse_teste))
+  
+  print(paste0('DATASET NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_norm_teste, ' -- ', mae_norm_teste))
+  print(paste0('RMSE :', rmse_norm_treino, ' -- ', rmse_norm_teste))
+  
+  print('MUDANDO DE MODELO')
+  print('')
+  print('')
+  print('')
+  
+}
+
+### Temos aqui que aplicando o log na variável resposta, analisando MAE e RMSE, temos um melhor desempenho. Notamos também que normalizar ou não os dados fez pouca diferença, entretanto os modelos com termos quadráticos tiverem um melhor resultado
+```
