@@ -27,7 +27,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r echo=TRUE, warning=FALSE, message=FALSE}
+```{r echo=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 ## Carregando os pacotes
 require(readxl)
 require(corrplot)
@@ -744,6 +744,10 @@ categorias <- treino[,Ind_categoricas]
 
 ## Redução de dimensionalidade
 
+### Estrutura de correlações
+
+Como são todas variáveis numéricas inicialmente veremos na matriz de correlação se há algumas relação mais forte entre pares de variáveis. Se houver poderemos escolher somente uma das variáveis pois adiconar outra variável fortemente correlacionanda não adicionaria novas informações e traria dificuldades no processo de estimação em virtude de possível multicolinearidade.
+
 ```{r echo=TRUE}
 ## Analisando as correlações
 M <- cor(numericas, use = 'complete.obs')
@@ -758,6 +762,16 @@ corrplot(M, method='circle')
 ## Visualizando as correlações
 ggpairs(numericas)
 ```
+Como as maiores correlações foram de $0,65$, não podemos afirmar que há pares de variáveis redundantes. Portanto optamos por não retirar nenhuma variável nessa etapa.
+
+### Análise de redundância
+
+Na análise de redundância utilizamos regressões de cada variável tendo as outras como suas preditoras, inclusive com componentes não lineares via *splines* cúbicos. Essa análise é superior ao correlograma no sentido de que considera não somente as relações lineares dois a dois, mas também a capacidade das preditoras fornecerem informações sobre as outras preditoras de forma conjunta.
+
+```{r, echo=TRUE, cache=TRUE}
+redun(~ ., r2 = .8, type = "adjusted", data = numericas)
+```
+Como resultado dessa análise as variáveis cimento, considerando como critério um $R^2 $ água e cinza podem ser facilmente preditas a partir das outras, portanto serão excluídas.
 
 
 ## Modelagem
