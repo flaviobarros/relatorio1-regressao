@@ -749,6 +749,10 @@ categorias <- treino[,Ind_categoricas]
 Como são todas variáveis numéricas inicialmente veremos na matriz de correlação se há algumas relação mais forte entre pares de variáveis. Se houver poderemos escolher somente uma das variáveis pois adiconar outra variável fortemente correlacionanda não adicionaria novas informações e traria dificuldades no processo de estimação em virtude de possível multicolinearidade.
 
 ```{r echo=TRUE}
+## Adicionando pacote corrplot
+require(corrplot)
+require(GGally)
+
 ## Analisando as correlações
 M <- cor(numericas, use = 'complete.obs')
 corrplot(M, method='number', diag = T, number.cex = 0.8)
@@ -794,6 +798,6 @@ addscree <- function (x , npcs = min (10 , length (x$sdev)) ,
 }
 addscree (prin.raw)
 ```
-
+Não parece haver uma estrutura onde as primeiras componente dominam as outras. Portanto com base nessa análise ainda não teríamos indicação de eliminar variáveis.
 
 ## Modelagem
