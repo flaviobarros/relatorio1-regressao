@@ -204,8 +204,7 @@ outlierTest(modelo1)
 ## Outliers em y
 ```
 
-head(dados)
-colnames(dados)
+
 ## Modelagem
 ```{r echo=TRUE}
 
@@ -338,4 +337,21 @@ for (f in formulas_log) {
 }
 
 ### Temos aqui que aplicando o log na variável resposta, analisando MAE e RMSE, temos um melhor desempenho. Notamos também que normalizar ou não os dados fez pouca diferença, entretanto os modelos com termos quadráticos tiverem um melhor resultado
+```
+
+## Análise de Resíduos
+```{r echo=TRUE}
+
+### A partir do tópico anterior, selecionamos o modelo a baixo. Vamos utilizá-lo para fazer a análise de resíduos
+
+
+final_model <- lm(formula = f2_log, data = treino)
+
+e <- resid(final_model)
+
+
+plot(log(treino$forca_compressiva), e,
+     ylab="Residuals", xlab="Y", 
+     main="Análise de Residuos") 
+abline(0, 0)            
 ```
