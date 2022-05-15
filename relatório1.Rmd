@@ -773,5 +773,27 @@ redun(~ ., r2 = .8, type = "adjusted", data = numericas)
 ```
 Como resultado dessa análise as variáveis cimento, considerando como critério um $R^2 $ água e cinza podem ser facilmente preditas a partir das outras, portanto serão excluídas.
 
+### Estrutura das variáveis com PCA
+
+```{r, echo=TRUE, cache=TRUE}
+# Calculando o PCA
+prin.raw <- princomp (~ ., cor = TRUE , data = numericas)
+plot (prin.raw, type = 'lines' , main = ' ' , ylim = c (0 ,3))
+
+# Adicionando a variância cumulativa explicada
+addscree <- function (x , npcs = min (10 , length (x$sdev)) ,
+                      plotv = FALSE ,
+                      col =1 , offset = .8 , adj =0 , pr = FALSE) {
+                        vars <- x$sdev^2
+                        cumv <- cumsum(vars)/sum(vars)
+                        if (pr) print(cumv)
+                        text (1: npcs , vars [1: npcs ] + offset*par ('cxy')[2] ,
+                        as.character(round(cumv [1: npcs ], 2)),
+                        srt =45 , adj = adj , cex = .65 , xpd = NA , col = col)
+                        if ( plotv ) lines (1: npcs , vars [1: npcs ], type = ' b ' , col = col )
+}
+addscree (prin.raw)
+```
+
 
 ## Modelagem
