@@ -1,6 +1,6 @@
 ---
 title: "Relatório 1 - Regressão"
-author: "Flavio Margarito Martins de Barros"
+author: "Flavio Margarito Martins de Barros \n Gabriel Tupinamba da Cunha Leandro \n Gustavo Leite Machado"
 date: "14/05/2022"
 output: pdf_document
 header-includes:
@@ -31,21 +31,59 @@ require(corrplot)
 require(psych)
 require(kableExtra)
 require(caret)
+require(car)
 require(GGally)
+require(ggplot2)
 ```
 
 
 ```{r echo=TRUE, cache=TRUE}
 ## Lendo o banco de dados
+## Fonte: https://archive.ics.uci.edu/ml/datasets/Concrete+Compressive+Strength
 dados <- read_excel(path = "Concrete_Data.xls", sheet = 1)
 
 ## Trocando os nomes das variáveis para o português
-colnames(dados) <- c("cimento", "escoria", "cinza", "agua", "super_plastificante",
-                     "agregador_grosso", "agregador_fino", "idade", "forca_compressiva")
+colnames(dados) <-
+  c(
+    "cimento",
+    "escoria",
+    "cinza",
+    "agua",
+    "super_plastificante",
+    "agregador_grosso",
+    "agregador_fino",
+    "idade",
+    "forca_compressiva"
+  )
+
+## Descrição básica dos dados
+
+## Cimento               -- numérica -- kg / m3      -- Variável explicativa
+## Escoria               -- numérica -- kg / m3      -- Variável explicativa
+## Cinza                 -- numérica -- kg / m3      -- Variável explicativa
+## Agua                  -- numérica -- kg / m3      -- Variável explicativa
+## Super plastificante   -- numérica -- kg / m3      -- Variável explicativa
+## Agregadro grosso      -- numérica -- kg / m3      -- Variável explicativa
+## Agregador fino        -- numérica -- kg / m3      -- Variável explicativa
+## Idade                 -- numérica -- Dias (1~365) -- Variável explicativa
+## Força compressiva     -- numérica -- MPa          -- Target
 
 ## Sumario dos dados
+describe(dados)
+
+sum(is.na(data.frame(dados)))
+
+# Como podemos notar, temos 1030 observações, 8 variáveis explicativas e nossa variável de interesse (força compressiva), e nenhum dado faltante nas observações.
+# Pela descrição básica dos dados, não temos nenhum dado que parece fugir dos valores esperados (por exemplo: não temos valores negativos)
+
+ggplot(dados, aes(x = forca_compressiva)) +
+  geom_histogram(aes(y=..density..)) +
+  geom_density(alpha=.2, fill="#FF6666") 
+
+### Analisando a nossa variável resposta podemos notar que sua distribuição se assemelha a normal
 
 ```
+
 ## Preparação dos dados
 ```{r, echo=TRUE, cache=TRUE}
 ## Separando o conjunto de dados em treino e teste
@@ -59,12 +97,12 @@ treino <- treino[complete.cases(treino),]
 teste <- teste[complete.cases(teste),]
 
 ## Separando a variavel resposta, categóricas e numericas
-resposta <- treino$forca_compressiva
-resposta_teste <- teste$forca_compressiva
+# resposta <- treino$forca_compressiva
+# resposta_teste <- teste$forca_compressiva
 
-## Removendo a variável resposta
-treino <- treino[,-ncol(treino)]
-teste <- teste[,-ncol(teste)]
+# ## Removendo a variável resposta
+# treino <- treino[,-ncol(treino)]
+# teste <- teste[,-ncol(teste)]
 
 ## Retendo as numéricas
 Ind_numericas <- colnames(treino)[sapply(treino, is.numeric)]
@@ -89,7 +127,54 @@ corrplot(M, method='circle')
 
 ## Visualizando as correlações
 ggpairs(numericas)
-```
 
+### Como podemos notar, não temos uma correlação muita alta (pensando em módulo) entre as covariáveis. Entretanto, mesmo que tivéssemos, provavelmente não poderíamos remover alguma delas, pois, todas podem ser importantes, seja em termos químicos, seja em termos legas/legislativos.
+### Dependendo do objetivo da análise, se queremos acertar o valor da força compressevia de uma certa batelagem de cimento, ou do cimento utilizado em uma certa obra, ou se apenas queremos entender como essas variáveis influenciam na força compressiva, temos mais ou menos liberdades para modificar as covariáveis.
+
+## Análise de Multicolinearidade
+### Como não temos variáveis altamente correlacionadas, provavelmente não teremos multicolinearidade, e ainda que tívessemos, provavelmente não poderíamos remover covariáveis da análise, entretando, vamos verificar mesmo assim.
+### Para esse teste de multicolinearidade vamos utilizar a função vif (variance inflation factor) do pacote car
+
+modelo1 <- lm(forca_compressiva ~., data = treino)
+
+predictions <- mcmodel %>% predict(lm_teste)
+
+vif(modelo1)
+
+### Como não temos valores muito altos (a cima de 10) de vif para nenhuma das covariáveis, vamos assumir que não sofremos do problema de multicolinearidade
+
+```
+## Detecção de Outliers
+
+```{r echo=TRUE}
+
+X <- subset(treino, select = -c("forca_compressiva"))
+
+H <- data.matrix(X) %*% solve((t(data.matrix(X)) %*% data.matrix(X))) %*% t(data.matrix(X))
+
+hbar <- sum(diag(H)) / nrow(X)
+
+criterio_oulier <- 2*hbar
+
+sum(diag(H) > criterio_oulier)
+
+### Por esse método temos possíveis 55 outliers
+### Entretando, utilizando critérios alternativos:
+### h_ii > 0.5 outlier
+### 0.2 < h_ii < 0.5 Moderad -> analisar
+### h_ii < 0.2 não é outlier
+
+sum(diag(H) > 0.5)
+
+sum((diag(H) < criterio_oulier) & ((diag(H) > 0.2)))
+
+sum(diag(H) < 0.2) / nrow(X)
+
+### Temos que todos os valores de diag(H) são inferiores a 0.2
+### Logo, como não temos nenhum caso que precisamos constestar, vamos seguir com o critério alternativo, de que não temos nenhuma observação que deveríamos considerar outlier
+
+
+
+```
 
 ## Modelagem
