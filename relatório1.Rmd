@@ -801,3 +801,40 @@ addscree (prin.raw)
 Não parece haver uma estrutura onde as primeiras componente dominam as outras. Portanto com base nessa análise ainda não teríamos indicação de eliminar variáveis.
 
 ## Modelagem
+
+```{r, echo=TRUE, eval=TRUE, cache=TRUE}
+## Carregando os pacotes
+require(ggplot2)
+
+## Definindo as estatísticas de resumo para os plots
+d <- datadist(dados)
+options(datadist = "d")
+
+## Carregando pacotes necessários
+require(rms)
+
+mod1 <- ols(forca_compressiva ~ rcs(cimento, 10) + rcs(escoria, 10) + rcs(cinza, 10) + 
+                  rcs(agua, 10) + rcs(super_plastificante, 10) + rcs(agregador_grosso, 10) +
+                  rcs(agregador_fino, 10) + rcs(idade, 10),
+              data = dados, x = TRUE, y = TRUE)
+
+mod1
+anova(mod1)
+summary(mod1)
+plot(summary(mod1))
+
+## Fazendo os plots dos resíduos
+both <- data.frame(residuos = resid(mod1), ajustado = fitted (mod1))
+both$cimento <- dados$cimento
+both$dia <- dados$idade
+
+yl <- ylab ('Residuals')
+p1 <-  ggplot(both , aes( x = ajustado , y = residuo)) + geom_point() + yl
+p2 <- ggplot(both , aes( x = cimento , y = residuo )) + geom_point() + yl
+p3 <- ggplot(both , aes( x = dia , y = residuo )) + yl + ylim ( -100 , 100) +
+stat_summary(fun.data = "mean_sdl", geom = 'smooth', fun)
+p4 <- ggplot(both , aes(sample = residuo)) + stat_qq() +
+geom_abline(intercept = mean(resid(mod1)), slope = sd(resid(mod1))) + yl
+gridExtra::grid.arrange( p1 , p2 , p3 , p4 , ncol =2)
+```
+
