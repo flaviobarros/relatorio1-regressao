@@ -1,6 +1,9 @@
 ---
 title: "Relatório 1 - Regressão"
-author: "Flavio Margarito Martins de Barros"
+author: 
+    - Flavio Margarito Martins de Barros 
+    - Gabriel Tupinamba da Cunha Leandro 
+    - Gustavo Leite Machado
 date: "14/05/2022"
 output: pdf_document
 header-includes:
@@ -21,11 +24,6 @@ header-includes:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## Conjunto de dados
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r echo=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 ## Carregando os pacotes
@@ -39,15 +37,48 @@ require(Hmisc)
 ```
 
 
+## Descrição básica dos dados
+
 ```{r echo=TRUE, cache=TRUE}
 ## Lendo o banco de dados
+## Fonte: https://archive.ics.uci.edu/ml/datasets/Concrete+Compressive+Strength
 dados <- read_excel(path = "Concrete_Data.xls", sheet = 1)
 
 ## Trocando os nomes das variáveis para o português
-colnames(dados) <- c("cimento", "escoria", "cinza", "agua", "super_plastificante",
-                     "agregador_grosso", "agregador_fino", "idade", "forca_compressiva")
+colnames(dados) <-
+  c(
+    "cimento",
+    "escoria",
+    "cinza",
+    "agua",
+    "super_plastificante",
+    "agregador_grosso",
+    "agregador_fino",
+    "idade",
+    "forca_compressiva"
+  )
 
+sum(is.na(data.frame(dados)))
+
+
+ggplot(dados, aes(x = forca_compressiva)) +
+  geom_histogram(aes(y=..density..)) +
+  geom_density(alpha=.2, fill="#FF6666") 
 ```
+
+* Cimento               ($kg/m^3$)
+* Escoria               ($kg/m^3$)
+* Cinza                 ($kg/m^3$)
+* Agua                  ($kg/m^3$)
+* Super plastificante   ($kg/m^3$)
+* Agregadro grosso      ($kg/m^3$)
+* Agregador fino        ($kg/m^3$)
+* Idade                          (Dias 1 a 365)
+* Força compressiva (Target)     ($MPa$) 
+
+Como podemos notar, temos 1030 observações, 8 variáveis explicativas e nossa variável de interesse (força compressiva), e nenhum dado faltante nas observações. Pela descrição básica dos dados, não temos nenhum dado que parece fugir dos valores esperados (por exemplo: não temos valores negativos).
+
+Analisando a nossa variável resposta podemos notar que sua distribuição se assemelha a uma normal
 
 ```{r, echo=TRUE, eval=FALSE}
 ## Sumario dos dados
@@ -730,17 +761,29 @@ teste <- teste[complete.cases(teste),]
 resposta <- treino$forca_compressiva
 resposta_teste <- teste$forca_compressiva
 
-## Removendo a variável resposta
-treino <- treino[,-ncol(treino)]
-teste <- teste[,-ncol(teste)]
+## Criando dataset normalizado para avaliar diferença de resultado
+normalized_train <- treino
+normalized_teste <- teste
+
+maxTrainFeatures <- apply(normalized_train[,1:8], 2, max) #max of each feature
+minTrainFeatures <- apply(normalized_train[,1:8], 2, min) #min of each feature
+
+
+minMaxDiffTrain <- (maxTrainFeatures - minTrainFeatures)
+minMaxDiffTrain
+
+normalized_train[,1:8] <- sweep(normalized_train[,1:8], 2, minTrainFeatures, "-")
+normalized_train[,1:8] <- sweep(normalized_train[,1:8], 2, minMaxDiffTrain, "/")
+
+normalized_teste[,1:8] <- sweep(normalized_teste[,1:8], 2, minTrainFeatures, "-")
+normalized_teste[,1:8] <- sweep(normalized_teste[,1:8], 2, minMaxDiffTrain, "/")
 
 ## Retendo as numéricas
-Ind_numericas <- colnames(treino)[sapply(treino, is.numeric)]
-Ind_categoricas <- colnames(treino)[sapply(treino, function(x) !is.numeric(x))]
+Ind_numericas <- colnames(treino[,-ncol(treino)])[sapply(treino[,-ncol(treino)], is.numeric)]
+Ind_categoricas <- colnames(treino[,-ncol(treino)])[sapply(treino[,-ncol(treino)], function(x) !is.numeric(x))]
 numericas <- treino[,Ind_numericas]
 categorias <- treino[,Ind_categoricas]
 ```
-
 
 ## Redução de dimensionalidade
 
@@ -766,7 +809,11 @@ corrplot(M, method='circle')
 ## Visualizando as correlações
 ggpairs(numericas)
 ```
-Como as maiores correlações foram de $0,65$, não podemos afirmar que há pares de variáveis redundantes. Portanto optamos por não retirar nenhuma variável nessa etapa.
+
+Como as maiores correlações foram de $0,65$, não podemos afirmar que há pares de variáveis redundantes. Portanto optamos por não retirar nenhuma variável nessa etapa. Como não temos variáveis altamente correlacionadas, provavelmente não teremos multicolinearidade, e ainda que tívessemos, provavelmente não poderíamos remover covariáveis da análise, entretando, vamos verificar mesmo assim.
+
+Dependendo do objetivo da análise, se queremos acertar o valor da força compressevia de uma certa batelagem de cimento, ou do cimento utilizado em uma certa obra, ou se apenas queremos entender como essas variáveis influenciam na força compressiva, temos mais ou menos liberdades para modificar as covariáveis. 
+
 
 ### Análise de redundância
 
@@ -775,6 +822,7 @@ Na análise de redundância utilizamos regressões de cada variável tendo as ou
 ```{r, echo=TRUE, cache=TRUE}
 redun(~ ., r2 = .8, type = "adjusted", data = numericas)
 ```
+
 Como resultado dessa análise as variáveis cimento, considerando como critério um $R^2 $ água e cinza podem ser facilmente preditas a partir das outras, portanto serão excluídas.
 
 ### Estrutura das variáveis com PCA
@@ -802,22 +850,181 @@ Não parece haver uma estrutura onde as primeiras componente dominam as outras. 
 
 ## Modelagem
 
+### Modelos lineares com polinômios
+
+```{r echo=TRUE, cache=TRUE}
+## Modelo linear sem interações e sem termos polinomiais
+f1 <-
+  formula(
+    "forca_compressiva ~ cimento + escoria + cinza + agua +
+      super_plastificante + agregador_grosso +
+      agregador_fino + idade"
+  )
+
+## Transformando a variável resposta pelo log()
+f1_log <-
+  formula(
+    "log(forca_compressiva) ~ cimento + escoria + cinza + agua +
+      super_plastificante + agregador_grosso +
+      agregador_fino + idade"
+  )
+
+## Modelo com polinômios
+f2 <- formula(
+  "forca_compressiva ~ cimento + escoria + cinza + agua +
+    super_plastificante + agregador_grosso + agregador_fino + idade +
+    I(cimento ^ 2) + I(escoria ^ 2) + I(cinza ^ 2) +
+    I(agua ^ 2) + I(super_plastificante ^2) +
+    I(agregador_grosso ^ 2) + I(agregador_fino ^ 2) + I(idade ^ 2)"
+  )
+
+## Modelo com polinômio na variável transformada por log
+f2_log <- formula(
+  "log(forca_compressiva) ~ cimento + escoria + cinza + agua +
+    super_plastificante + agregador_grosso + agregador_fino + idade +
+    I(cimento ^ 2) + I(escoria ^ 2) + I(cinza ^ 2) +
+    I(agua ^ 2) + I(super_plastificante ^2) +
+    I(agregador_grosso ^ 2) + I(agregador_fino ^ 2) + I(idade ^ 2)"
+  )
+
+## Salvando as fórmulas
+formulas <- c(f1, f2)
+
+## Criando os modelos
+for (f in formulas) {
+  ##model
+  model <- lm(formula = f, data=treino)
+  
+  model_norm <- lm(formula = f, data=normalized_train)
+  
+  ##predicao treino
+  treinoPred     <- predict(model, treino)
+  treinoPredNorm <- predict(model_norm, normalized_train)
+  
+  ##predicao teste
+  testePred     <- predict(model, teste)
+  testePredNorm <- predict(model_norm, normalized_teste)
+  
+  
+  mae_treino  <- round(MAE(treino$forca_compressiva, treinoPred), 3)
+  mae_teste   <- round(MAE(teste$forca_compressiva, testePred), 3)
+  
+  
+  rmse_treino <- round(RMSE(treino$forca_compressiva, treinoPred), 3)
+  rmse_teste  <- round(RMSE(teste$forca_compressiva, testePred), 3)
+  
+  
+  mae_norm_treino  <- round(MAE(normalized_train$forca_compressiva, treinoPredNorm), 3)
+  mae_norm_teste   <- round(MAE(normalized_teste$forca_compressiva, testePredNorm), 3)
+  
+  rmse_norm_treino <- round(RMSE(normalized_train$forca_compressiva, treinoPredNorm), 3)
+  rmse_norm_teste  <- round(RMSE(normalized_teste$forca_compressiva, testePredNorm), 3)
+  
+  print(f)
+  
+  print(paste0('DATASET NÂO NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_treino, ' --  ', mae_teste))
+  print(paste0('RMSE :', rmse_treino, ' -- ', rmse_teste))
+
+  print(paste0('DATASET NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_norm_teste, ' -- ', mae_norm_teste))
+  print(paste0('RMSE :', rmse_norm_treino, ' -- ', rmse_norm_teste))
+  
+  print('MUDANDO DE MODELO')
+  print('')
+  print('')
+  print('')
+
+}
+
+formulas_log <- c(f1_log, f2_log)
+
+for (f in formulas_log) {
+  ##model
+  model <- lm(formula = f, data=treino)
+  
+  model_norm <- lm(formula = f, data=normalized_train)
+  
+  ##predicao treino
+  treinoPred     <- predict(model, treino)
+  treinoPredNorm <- predict(model_norm, normalized_train)
+  
+  ##predicao teste
+  testePred     <- predict(model, teste)
+  testePredNorm <- predict(model_norm, normalized_teste)
+  
+  
+  mae_treino  <- round(MAE(log(treino$forca_compressiva), treinoPred), 3)
+  mae_teste   <- round(MAE(log(teste$forca_compressiva), testePred), 3)
+  
+  
+  rmse_treino <- round(RMSE(log(treino$forca_compressiva), treinoPred), 3)
+  rmse_teste  <- round(RMSE(log(teste$forca_compressiva), testePred), 3)
+  
+  
+  mae_norm_treino  <- round(MAE(log(normalized_train$forca_compressiva), treinoPredNorm), 3)
+  mae_norm_teste   <- round(MAE(log(normalized_teste$forca_compressiva), testePredNorm), 3)
+  
+  rmse_norm_treino <- round(RMSE(log(normalized_train$forca_compressiva), treinoPredNorm), 3)
+  rmse_norm_teste  <- round(RMSE(log(normalized_teste$forca_compressiva), testePredNorm), 3)
+  
+  print(f)
+  
+  print(paste0('DATASET NÂO NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_treino, ' --  ', mae_teste))
+  print(paste0('RMSE :', rmse_treino, ' -- ', rmse_teste))
+  
+  print(paste0('DATASET NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_norm_teste, ' -- ', mae_norm_teste))
+  print(paste0('RMSE :', rmse_norm_treino, ' -- ', rmse_norm_teste))
+  
+  print('MUDANDO DE MODELO')
+  print('')
+  print('')
+  print('')
+  
+}
+
+```
+
+Aplicando o $log()$ na variável resposta, analisando $MAE$ e $RMSE$, temos um melhor desempenho. Notamos também que normalização fez pouca diferença, entretanto os modelos com termos quadráticos tiveram um melhor resultado. Isso já era esperado pois no artigo original dos dados o modelo original foi criado com redes neurais. 
+
+### Análise de Resíduos
+```{r echo=TRUE, cache=TRUE}
+### Modelo final
+final_model <- lm(formula = f1, data = treino)
+
+## Obtendo os resíduos
+e <- resid(final_model)
+
+## Gráfico de resíduos
+#plot(log(treino$forca_compressiva), e,
+#     ylab="Resíduos", xlab="Valor Observado", 
+#     main="Análise de Resíduos") 
+#abline(0, 0)
+
+## Plot automatico
+par(mfrow=c(2,2))
+plot(final_model)
+```
+
+### Relaxando a linearidade com splines
 ```{r, echo=TRUE, eval=TRUE, cache=TRUE}
 ## Carregando os pacotes
 require(ggplot2)
+require(rms)
 
 ## Definindo as estatísticas de resumo para os plots
 d <- datadist(dados)
 options(datadist = "d")
 
-## Carregando pacotes necessários
-require(rms)
-
+## Ajustando um modelo com splines cúbicos
 mod1 <- ols(forca_compressiva ~ rcs(cimento, 10) + rcs(escoria, 10) + rcs(cinza, 10) + 
                   rcs(agua, 10) + rcs(super_plastificante, 10) + rcs(agregador_grosso, 10) +
                   rcs(agregador_fino, 10) + rcs(idade, 10),
               data = dados, x = TRUE, y = TRUE)
 
+## Avaliando o modelo
 mod1
 anova(mod1)
 summary(mod1)
@@ -829,12 +1036,62 @@ both$cimento <- dados$cimento
 both$dia <- dados$idade
 
 yl <- ylab ('Residuals')
-p1 <-  ggplot(both , aes( x = ajustado , y = residuo)) + geom_point() + yl
-p2 <- ggplot(both , aes( x = cimento , y = residuo )) + geom_point() + yl
-p3 <- ggplot(both , aes( x = dia , y = residuo )) + yl + ylim ( -100 , 100) +
-stat_summary(fun.data = "mean_sdl", geom = 'smooth', fun)
-p4 <- ggplot(both , aes(sample = residuo)) + stat_qq() +
+p1 <-  ggplot(both , aes( x = ajustado , y = residuos)) + geom_point() + yl
+p2 <- ggplot(both , aes( x = cimento , y = residuos )) + geom_point() + yl
+p3 <- ggplot(both , aes( x = dia , y = residuos)) + yl + ylim ( -100 , 100) +
+stat_summary(fun.data = "mean_sdl", geom = 'smooth')
+p4 <- ggplot(both , aes(sample = residuos)) + stat_qq() +
 geom_abline(intercept = mean(resid(mod1)), slope = sd(resid(mod1))) + yl
 gridExtra::grid.arrange( p1 , p2 , p3 , p4 , ncol =2)
 ```
+
+
+## Detecção de Outliers
+
+```{r echo=TRUE}
+## Carregando os pacotes necessários
+require(car)
+
+## Outliers em X
+X <- treino[, 1:8] #subset(treino, select = -c("forca_compressiva"))
+
+H <- data.matrix(X) %*% 
+  solve((t(data.matrix(X)) %*% 
+           data.matrix(X))) %*% 
+  t(data.matrix(X))
+
+hbar <- sum(diag(H))/nrow(X)
+
+criterio_oulier <- 2*hbar
+
+sum(diag(H) > criterio_oulier)
+
+
+sum(diag(H) > 0.5)
+
+sum((diag(H) < criterio_oulier) & ((diag(H) > 0.2)))
+
+sum(diag(H) < 0.2) / nrow(X)
+
+
+outlierTest(final_model)
+```
+
+> Por esse método temos possíveis 55 outliers
+> Entretando, utilizando critérios alternativos:
+
+* h_ii > 0.5 outlier
+* 0.2 < h_ii < 0.5 Moderad -> analisar
+* h_ii < 0.2 não é outlier
+
+> Temos que todos os valores de diag(H) são inferiores a 0.2.
+
+>Agora, utilizando a função outliers do pacote car, temos o seguinte:
+
+* Utilizando o mesmo modelo que foi utilizado para a análise de multicolinearidade, não temos nenhum ponto que possa ser considerado um outlier.
+
+> Logo, como em 2 dos 3 testes não temos nenhum ponto identificado como outlier, vamos considerar que não temos nenhuma observação que deveríamos considerar outlier
+
+
+
 
