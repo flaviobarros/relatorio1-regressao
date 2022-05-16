@@ -1,6 +1,6 @@
 ---
 title: "Relatório 1 - Regressão"
-author: "Flavio Margarito Martins de Barros"
+author: "Flavio Margarito Martins de Barros \n Gabriel Tupinamba da Cunha Leandro \n Gustavo Leite Machado"
 date: "14/05/2022"
 output: pdf_document
 header-includes:
@@ -12,9 +12,6 @@ header-includes:
 - \usepackage{mathrsfs}
 - \usepackage[makeroom]{cancel}
 - \usepackage{xcolor}
-- \usepackage{setspace}
-- \usepackage{xspace}
-- \usepackage{relsize}
 ---
 
 ```{r setup, include=FALSE}
@@ -34,685 +31,60 @@ require(corrplot)
 require(psych)
 require(kableExtra)
 require(caret)
+require(car)
 require(GGally)
-require(Hmisc)
+require(ggplot2)
 ```
 
-
+## Descrição básica dos dados
 ```{r echo=TRUE, cache=TRUE}
 ## Lendo o banco de dados
+## Fonte: https://archive.ics.uci.edu/ml/datasets/Concrete+Compressive+Strength
 dados <- read_excel(path = "Concrete_Data.xls", sheet = 1)
 
 ## Trocando os nomes das variáveis para o português
-colnames(dados) <- c("cimento", "escoria", "cinza", "agua", "super_plastificante",
-                     "agregador_grosso", "agregador_fino", "idade", "forca_compressiva")
+colnames(dados) <-
+  c(
+    "cimento",
+    "escoria",
+    "cinza",
+    "agua",
+    "super_plastificante",
+    "agregador_grosso",
+    "agregador_fino",
+    "idade",
+    "forca_compressiva"
+  )
 
-```
 
-```{r, echo=TRUE, eval=FALSE}
 ## Sumario dos dados
-d <- Hmisc::describe(dados)
+describe(dados)
+
+sum(is.na(data.frame(dados)))
+
+
+ggplot(dados, aes(x = forca_compressiva)) +
+  geom_histogram(aes(y=..density..)) +
+  geom_density(alpha=.2, fill="#FF6666") 
+
+
+
 ```
 
-\begin{spacing}{0.7}
-\begin{center}\textbf{ dados \\ 9 Variables~~~~~ 1030 ~Observations}\end{center}
-\smallskip\hrule\smallskip{\small
-\vbox{\noindent\textbf{cimento}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){7}}
-\put(34,0){\line(0,1){7}}
-\put(50,0){\line(0,1){7}}
-\put(84,0){\line(0,1){7}}
-\put(101,0){\line(0,1){4}}
-\put(118,0){\line(0,1){25}}
-\put(135,0){\line(0,1){29}}
-\put(151,0){\line(0,1){36}}
-\put(168,0){\line(0,1){42}}
-\put(185,0){\line(0,1){60}}
-\put(202,0){\line(0,1){33}}
-\put(219,0){\line(0,1){67}}
-\put(235,0){\line(0,1){31}}
-\put(252,0){\line(0,1){25}}
-\put(269,0){\line(0,1){31}}
-\put(286,0){\line(0,1){13}}
-\put(303,0){\line(0,1){44}}
-\put(320,0){\line(0,1){22}}
-\put(336,0){\line(0,1){31}}
-\put(353,0){\line(0,1){11}}
-\put(370,0){\line(0,1){29}}
-\put(387,0){\line(0,1){73}}
-\put(404,0){\line(0,1){31}}
-\put(420,0){\line(0,1){4}}
-\put(437,0){\line(0,1){31}}
-\put(454,0){\line(0,1){35}}
-\put(471,0){\line(0,1){36}}
-\put(488,0){\line(0,1){9}}
-\put(505,0){\line(0,1){100}}
-\put(521,0){\line(0,1){22}}
-\put(538,0){\line(0,1){11}}
-\put(555,0){\line(0,1){16}}
-\put(589,0){\line(0,1){62}}
-\put(605,0){\line(0,1){9}}
-\put(622,0){\line(0,1){25}}
-\put(639,0){\line(0,1){35}}
-\put(656,0){\line(0,1){40}}
-\put(673,0){\line(0,1){27}}
-\put(690,0){\line(0,1){33}}
-\put(706,0){\line(0,1){27}}
-\put(723,0){\line(0,1){44}}
-\put(740,0){\line(0,1){33}}
-\put(757,0){\line(0,1){18}}
-\put(774,0){\line(0,1){36}}
-\put(790,0){\line(0,1){15}}
-\put(807,0){\line(0,1){38}}
-\put(841,0){\line(0,1){36}}
-\put(858,0){\line(0,1){9}}
-\put(875,0){\line(0,1){15}}
-\put(891,0){\line(0,1){40}}
-\put(925,0){\line(0,1){35}}
-\put(942,0){\line(0,1){44}}
-\put(959,0){\line(0,1){33}}
-\put(975,0){\line(0,1){18}}
-\put(992,0){\line(0,1){22}}
-\put(1009,0){\line(0,1){13}}
-\put(1026,0){\line(0,1){2}}
-\put(1093,0){\line(0,1){51}}
-\put(1110,0){\line(0,1){11}}
-\put(1127,0){\line(0,1){2}}
-\put(1144,0){\line(0,1){9}}
-\put(1160,0){\line(0,1){25}}
-\put(1177,0){\line(0,1){4}}
-\put(1245,0){\line(0,1){9}}
-\put(1261,0){\line(0,1){24}}
-\put(1278,0){\line(0,1){13}}
-\put(1295,0){\line(0,1){2}}
-\put(1312,0){\line(0,1){15}}
-\put(1345,0){\line(0,1){20}}
-\put(1362,0){\line(0,1){2}}
-\put(1396,0){\line(0,1){4}}
-\put(1413,0){\line(0,1){7}}
-\put(1430,0){\line(0,1){13}}
-\put(1446,0){\line(0,1){11}}
-\put(1480,0){\line(0,1){16}}
-\end{picture}
+* Cimento               (kg / m3)
+* Escoria               (kg / m3)
+* Cinza                 (kg / m3)
+* Agua                  (kg / m3)
+* Super plastificante   (kg / m3)
+* Agregadro grosso      (kg / m3)
+* Agregador fino        (kg / m3)
+* Idade                          (Dias 1~365)
+* Força compressiva (Target)     (MPa) 
 
-{\smaller
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&280&1&281.2&118.5&143.7&153.5&192.4&272.9&350.0&425.0&480.0 \end{tabular}
-\begin{verbatim}
+> Como podemos notar, temos 1030 observações, 8 variáveis explicativas e nossa variável de interesse (força compressiva), e nenhum dado faltante nas observações.
+Pela descrição básica dos dados, não temos nenhum dado que parece fugir dos valores esperados (por exemplo: não temos valores negativos).
 
-lowest : 102.0 108.3 116.0 122.6 132.0, highest: 522.0 525.0 528.0 531.3 540.0
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-\vbox{\noindent\textbf{escoria}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){100}}
-\put(41,0){\line(0,1){1}}
-\put(61,0){\line(0,1){2}}
-\put(82,0){\line(0,1){7}}
-\put(102,0){\line(0,1){5}}
-\put(163,0){\line(0,1){3}}
-\put(184,0){\line(0,1){1}}
-\put(204,0){\line(0,1){3}}
-\put(225,0){\line(0,1){2}}
-\put(306,0){\line(0,1){2}}
-\put(347,0){\line(0,1){1}}
-\put(368,0){\line(0,1){1}}
-\put(388,0){\line(0,1){6}}
-\put(408,0){\line(0,1){5}}
-\put(429,0){\line(0,1){5}}
-\put(449,0){\line(0,1){1}}
-\put(470,0){\line(0,1){4}}
-\put(490,0){\line(0,1){3}}
-\put(510,0){\line(0,1){1}}
-\put(531,0){\line(0,1){5}}
-\put(551,0){\line(0,1){3}}
-\put(572,0){\line(0,1){3}}
-\put(592,0){\line(0,1){5}}
-\put(612,0){\line(0,1){2}}
-\put(633,0){\line(0,1){3}}
-\put(653,0){\line(0,1){2}}
-\put(674,0){\line(0,1){3}}
-\put(694,0){\line(0,1){2}}
-\put(715,0){\line(0,1){3}}
-\put(735,0){\line(0,1){1}}
-\put(755,0){\line(0,1){3}}
-\put(776,0){\line(0,1){10}}
-\put(796,0){\line(0,1){1}}
-\put(817,0){\line(0,1){2}}
-\put(837,0){\line(0,1){2}}
-\put(858,0){\line(0,1){4}}
-\put(878,0){\line(0,1){1}}
-\put(939,0){\line(0,1){1}}
-\put(960,0){\line(0,1){2}}
-\put(980,0){\line(0,1){2}}
-\put(1000,0){\line(0,1){1}}
-\put(1021,0){\line(0,1){1}}
-\put(1062,0){\line(0,1){1}}
-\put(1123,0){\line(0,1){1}}
-\put(1164,0){\line(0,1){1}}
-\put(1184,0){\line(0,1){1}}
-\put(1245,0){\line(0,1){1}}
-\put(1286,0){\line(0,1){1}}
-\put(1388,0){\line(0,1){1}}
-\put(1470,0){\line(0,1){1}}
-\end{picture}
-
-{\smaller[2]
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&187&0.907&73.9&91.71&  0.0&  0.0&  0.0& 22.0&142.9&192.0&236.0 \end{tabular}
-\begin{verbatim}
-
-lowest :   0.00   0.02  11.00  13.61  15.00, highest: 290.20 305.30 316.10 342.10 359.40
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-\vbox{\noindent\textbf{cinza}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){100}}
-\put(177,0){\line(0,1){3}}
-\put(442,0){\line(0,1){1}}
-\put(531,0){\line(0,1){1}}
-\put(560,0){\line(0,1){1}}
-\put(575,0){\line(0,1){1}}
-\put(590,0){\line(0,1){2}}
-\put(605,0){\line(0,1){1}}
-\put(634,0){\line(0,1){1}}
-\put(649,0){\line(0,1){1}}
-\put(664,0){\line(0,1){1}}
-\put(678,0){\line(0,1){1}}
-\put(693,0){\line(0,1){4}}
-\put(708,0){\line(0,1){5}}
-\put(723,0){\line(0,1){3}}
-\put(737,0){\line(0,1){5}}
-\put(767,0){\line(0,1){1}}
-\put(782,0){\line(0,1){1}}
-\put(796,0){\line(0,1){2}}
-\put(826,0){\line(0,1){3}}
-\put(841,0){\line(0,1){1}}
-\put(855,0){\line(0,1){1}}
-\put(870,0){\line(0,1){6}}
-\put(885,0){\line(0,1){1}}
-\put(899,0){\line(0,1){5}}
-\put(914,0){\line(0,1){5}}
-\put(929,0){\line(0,1){4}}
-\put(944,0){\line(0,1){2}}
-\put(958,0){\line(0,1){1}}
-\put(973,0){\line(0,1){3}}
-\put(988,0){\line(0,1){1}}
-\put(1003,0){\line(0,1){1}}
-\put(1017,0){\line(0,1){1}}
-\put(1032,0){\line(0,1){3}}
-\put(1047,0){\line(0,1){1}}
-\put(1062,0){\line(0,1){2}}
-\put(1076,0){\line(0,1){1}}
-\put(1091,0){\line(0,1){1}}
-\put(1106,0){\line(0,1){1}}
-\put(1121,0){\line(0,1){1}}
-\put(1165,0){\line(0,1){1}}
-\put(1180,0){\line(0,1){1}}
-\put(1209,0){\line(0,1){2}}
-\put(1224,0){\line(0,1){1}}
-\put(1239,0){\line(0,1){2}}
-\put(1268,0){\line(0,1){1}}
-\put(1283,0){\line(0,1){4}}
-\put(1298,0){\line(0,1){1}}
-\put(1312,0){\line(0,1){1}}
-\put(1327,0){\line(0,1){1}}
-\put(1342,0){\line(0,1){1}}
-\put(1357,0){\line(0,1){1}}
-\put(1371,0){\line(0,1){1}}
-\put(1386,0){\line(0,1){1}}
-\put(1401,0){\line(0,1){1}}
-\put(1416,0){\line(0,1){1}}
-\put(1430,0){\line(0,1){1}}
-\put(1445,0){\line(0,1){1}}
-\put(1475,0){\line(0,1){1}}
-\end{picture}
-
-{\smaller[2]
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&163&0.834&54.19&67.08&  0.0&  0.0&  0.0&  0.0&118.3&141.1&167.0 \end{tabular}
-\begin{verbatim}
-
-lowest :   0.00  24.46  24.51  24.52  59.00, highest: 194.00 194.90 195.00 200.00 200.10
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-\vbox{\noindent\textbf{agua}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){4}}
-\put(59,0){\line(0,1){6}}
-\put(189,0){\line(0,1){4}}
-\put(213,0){\line(0,1){1}}
-\put(225,0){\line(0,1){4}}
-\put(237,0){\line(0,1){5}}
-\put(249,0){\line(0,1){4}}
-\put(272,0){\line(0,1){6}}
-\put(284,0){\line(0,1){15}}
-\put(296,0){\line(0,1){4}}
-\put(343,0){\line(0,1){5}}
-\put(367,0){\line(0,1){12}}
-\put(379,0){\line(0,1){10}}
-\put(391,0){\line(0,1){8}}
-\put(403,0){\line(0,1){8}}
-\put(414,0){\line(0,1){14}}
-\put(426,0){\line(0,1){20}}
-\put(438,0){\line(0,1){21}}
-\put(450,0){\line(0,1){1}}
-\put(462,0){\line(0,1){8}}
-\put(474,0){\line(0,1){24}}
-\put(485,0){\line(0,1){1}}
-\put(497,0){\line(0,1){10}}
-\put(509,0){\line(0,1){21}}
-\put(521,0){\line(0,1){4}}
-\put(533,0){\line(0,1){10}}
-\put(545,0){\line(0,1){15}}
-\put(568,0){\line(0,1){19}}
-\put(580,0){\line(0,1){3}}
-\put(592,0){\line(0,1){11}}
-\put(604,0){\line(0,1){6}}
-\put(616,0){\line(0,1){8}}
-\put(628,0){\line(0,1){23}}
-\put(639,0){\line(0,1){8}}
-\put(651,0){\line(0,1){2}}
-\put(663,0){\line(0,1){15}}
-\put(675,0){\line(0,1){12}}
-\put(687,0){\line(0,1){15}}
-\put(699,0){\line(0,1){10}}
-\put(710,0){\line(0,1){16}}
-\put(722,0){\line(0,1){6}}
-\put(734,0){\line(0,1){9}}
-\put(746,0){\line(0,1){12}}
-\put(758,0){\line(0,1){61}}
-\put(770,0){\line(0,1){10}}
-\put(781,0){\line(0,1){10}}
-\put(793,0){\line(0,1){13}}
-\put(805,0){\line(0,1){3}}
-\put(817,0){\line(0,1){10}}
-\put(829,0){\line(0,1){100}}
-\put(841,0){\line(0,1){20}}
-\put(852,0){\line(0,1){6}}
-\put(864,0){\line(0,1){15}}
-\put(876,0){\line(0,1){6}}
-\put(888,0){\line(0,1){6}}
-\put(900,0){\line(0,1){7}}
-\put(912,0){\line(0,1){4}}
-\put(924,0){\line(0,1){12}}
-\put(935,0){\line(0,1){7}}
-\put(947,0){\line(0,1){5}}
-\put(959,0){\line(0,1){41}}
-\put(995,0){\line(0,1){3}}
-\put(1042,0){\line(0,1){8}}
-\put(1054,0){\line(0,1){1}}
-\put(1066,0){\line(0,1){1}}
-\put(1077,0){\line(0,1){2}}
-\put(1089,0){\line(0,1){1}}
-\put(1101,0){\line(0,1){4}}
-\put(1113,0){\line(0,1){1}}
-\put(1137,0){\line(0,1){1}}
-\put(1160,0){\line(0,1){3}}
-\put(1172,0){\line(0,1){2}}
-\put(1255,0){\line(0,1){44}}
-\put(1362,0){\line(0,1){2}}
-\put(1480,0){\line(0,1){2}}
-\end{picture}
-
-{\smaller[2]
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&205&0.998&181.6&23.82&146.1&154.6&164.9&185.0&192.0&203.5&228.0 \end{tabular}
-\begin{verbatim}
-
-lowest : 121.75 126.60 127.00 127.30 137.80, highest: 228.00 236.70 237.00 246.90 247.00
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-\vbox{\noindent\textbf{super\_plastificante}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){100}}
-\put(69,0){\line(0,1){1}}
-\put(91,0){\line(0,1){1}}
-\put(114,0){\line(0,1){1}}
-\put(137,0){\line(0,1){2}}
-\put(160,0){\line(0,1){2}}
-\put(183,0){\line(0,1){4}}
-\put(206,0){\line(0,1){6}}
-\put(229,0){\line(0,1){2}}
-\put(251,0){\line(0,1){7}}
-\put(274,0){\line(0,1){10}}
-\put(297,0){\line(0,1){7}}
-\put(320,0){\line(0,1){7}}
-\put(343,0){\line(0,1){5}}
-\put(366,0){\line(0,1){16}}
-\put(388,0){\line(0,1){5}}
-\put(411,0){\line(0,1){10}}
-\put(434,0){\line(0,1){8}}
-\put(457,0){\line(0,1){12}}
-\put(480,0){\line(0,1){5}}
-\put(503,0){\line(0,1){12}}
-\put(526,0){\line(0,1){16}}
-\put(548,0){\line(0,1){7}}
-\put(571,0){\line(0,1){2}}
-\put(594,0){\line(0,1){3}}
-\put(640,0){\line(0,1){2}}
-\put(663,0){\line(0,1){2}}
-\put(686,0){\line(0,1){1}}
-\put(708,0){\line(0,1){1}}
-\put(731,0){\line(0,1){2}}
-\put(754,0){\line(0,1){4}}
-\put(823,0){\line(0,1){1}}
-\put(846,0){\line(0,1){2}}
-\put(868,0){\line(0,1){1}}
-\put(914,0){\line(0,1){1}}
-\put(960,0){\line(0,1){1}}
-\put(1005,0){\line(0,1){2}}
-\put(1074,0){\line(0,1){1}}
-\put(1280,0){\line(0,1){1}}
-\put(1462,0){\line(0,1){1}}
-\end{picture}
-
-{\smaller[2]
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&155&0.95&6.203&6.426& 0.00& 0.00& 0.00& 6.35&10.16&12.21&16.05 \end{tabular}
-\begin{verbatim}
-
-lowest :  0.00  1.72  1.90  2.00  2.20, highest: 22.00 22.10 23.40 28.20 32.20
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-\vbox{\noindent\textbf{agregador\_grosso}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){9}}
-\put(43,0){\line(0,1){3}}
-\put(64,0){\line(0,1){3}}
-\put(86,0){\line(0,1){27}}
-\put(107,0){\line(0,1){13}}
-\put(128,0){\line(0,1){4}}
-\put(150,0){\line(0,1){7}}
-\put(171,0){\line(0,1){13}}
-\put(193,0){\line(0,1){6}}
-\put(214,0){\line(0,1){72}}
-\put(236,0){\line(0,1){6}}
-\put(257,0){\line(0,1){10}}
-\put(278,0){\line(0,1){12}}
-\put(300,0){\line(0,1){16}}
-\put(321,0){\line(0,1){6}}
-\put(343,0){\line(0,1){27}}
-\put(364,0){\line(0,1){16}}
-\put(385,0){\line(0,1){15}}
-\put(407,0){\line(0,1){9}}
-\put(428,0){\line(0,1){4}}
-\put(450,0){\line(0,1){7}}
-\put(471,0){\line(0,1){12}}
-\put(493,0){\line(0,1){18}}
-\put(514,0){\line(0,1){4}}
-\put(535,0){\line(0,1){27}}
-\put(557,0){\line(0,1){100}}
-\put(578,0){\line(0,1){28}}
-\put(600,0){\line(0,1){58}}
-\put(621,0){\line(0,1){81}}
-\put(642,0){\line(0,1){21}}
-\put(664,0){\line(0,1){27}}
-\put(685,0){\line(0,1){27}}
-\put(707,0){\line(0,1){66}}
-\put(728,0){\line(0,1){61}}
-\put(750,0){\line(0,1){49}}
-\put(771,0){\line(0,1){28}}
-\put(792,0){\line(0,1){6}}
-\put(814,0){\line(0,1){24}}
-\put(835,0){\line(0,1){1}}
-\put(857,0){\line(0,1){40}}
-\put(878,0){\line(0,1){97}}
-\put(899,0){\line(0,1){21}}
-\put(921,0){\line(0,1){10}}
-\put(942,0){\line(0,1){4}}
-\put(964,0){\line(0,1){27}}
-\put(985,0){\line(0,1){34}}
-\put(1006,0){\line(0,1){1}}
-\put(1028,0){\line(0,1){18}}
-\put(1049,0){\line(0,1){55}}
-\put(1071,0){\line(0,1){16}}
-\put(1092,0){\line(0,1){42}}
-\put(1114,0){\line(0,1){40}}
-\put(1135,0){\line(0,1){18}}
-\put(1156,0){\line(0,1){12}}
-\put(1178,0){\line(0,1){19}}
-\put(1199,0){\line(0,1){22}}
-\put(1221,0){\line(0,1){22}}
-\put(1242,0){\line(0,1){24}}
-\put(1285,0){\line(0,1){4}}
-\put(1306,0){\line(0,1){7}}
-\put(1328,0){\line(0,1){10}}
-\put(1349,0){\line(0,1){3}}
-\put(1371,0){\line(0,1){10}}
-\put(1392,0){\line(0,1){39}}
-\put(1413,0){\line(0,1){1}}
-\put(1435,0){\line(0,1){7}}
-\put(1478,0){\line(0,1){1}}
-\end{picture}
-
-{\smaller[2]
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&284&1&972.9&88.55& 842.0& 852.1& 932.0& 968.0&1029.4&1076.5&1104.0 \end{tabular}
-\begin{verbatim}
-
-lowest :  801.0  801.1  801.4  811.0  814.0, highest: 1124.4 1125.0 1130.0 1134.3 1145.0
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-\vbox{\noindent\textbf{agregador\_fino}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){42}}
-\put(37,0){\line(0,1){7}}
-\put(55,0){\line(0,1){8}}
-\put(74,0){\line(0,1){35}}
-\put(111,0){\line(0,1){3}}
-\put(129,0){\line(0,1){13}}
-\put(148,0){\line(0,1){4}}
-\put(166,0){\line(0,1){4}}
-\put(185,0){\line(0,1){4}}
-\put(203,0){\line(0,1){4}}
-\put(222,0){\line(0,1){8}}
-\put(240,0){\line(0,1){11}}
-\put(258,0){\line(0,1){6}}
-\put(277,0){\line(0,1){34}}
-\put(295,0){\line(0,1){8}}
-\put(314,0){\line(0,1){7}}
-\put(332,0){\line(0,1){4}}
-\put(351,0){\line(0,1){20}}
-\put(369,0){\line(0,1){27}}
-\put(388,0){\line(0,1){17}}
-\put(406,0){\line(0,1){10}}
-\put(425,0){\line(0,1){39}}
-\put(443,0){\line(0,1){14}}
-\put(462,0){\line(0,1){18}}
-\put(480,0){\line(0,1){6}}
-\put(498,0){\line(0,1){8}}
-\put(517,0){\line(0,1){21}}
-\put(535,0){\line(0,1){11}}
-\put(554,0){\line(0,1){42}}
-\put(572,0){\line(0,1){31}}
-\put(591,0){\line(0,1){76}}
-\put(609,0){\line(0,1){61}}
-\put(628,0){\line(0,1){21}}
-\put(646,0){\line(0,1){32}}
-\put(665,0){\line(0,1){32}}
-\put(683,0){\line(0,1){100}}
-\put(702,0){\line(0,1){45}}
-\put(720,0){\line(0,1){18}}
-\put(738,0){\line(0,1){37}}
-\put(757,0){\line(0,1){68}}
-\put(775,0){\line(0,1){65}}
-\put(794,0){\line(0,1){20}}
-\put(812,0){\line(0,1){18}}
-\put(831,0){\line(0,1){21}}
-\put(849,0){\line(0,1){27}}
-\put(868,0){\line(0,1){18}}
-\put(886,0){\line(0,1){3}}
-\put(905,0){\line(0,1){13}}
-\put(923,0){\line(0,1){38}}
-\put(942,0){\line(0,1){28}}
-\put(960,0){\line(0,1){31}}
-\put(978,0){\line(0,1){14}}
-\put(997,0){\line(0,1){13}}
-\put(1015,0){\line(0,1){21}}
-\put(1034,0){\line(0,1){7}}
-\put(1052,0){\line(0,1){10}}
-\put(1071,0){\line(0,1){34}}
-\put(1089,0){\line(0,1){20}}
-\put(1108,0){\line(0,1){18}}
-\put(1126,0){\line(0,1){21}}
-\put(1145,0){\line(0,1){21}}
-\put(1218,0){\line(0,1){7}}
-\put(1274,0){\line(0,1){6}}
-\put(1292,0){\line(0,1){11}}
-\put(1477,0){\line(0,1){7}}
-\end{picture}
-
-{\smaller
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&304&1&773.6&89.87&613.0&664.1&730.9&779.5&824.0&880.8&898.1 \end{tabular}
-\begin{verbatim}
-
-lowest : 594.0 605.0 611.8 612.0 613.0, highest: 925.7 942.0 943.1 945.0 992.6
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-\vbox{\noindent\textbf{idade}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){1}}
-\put(8,0){\line(0,1){32}}
-\put(23,0){\line(0,1){30}}
-\put(50,0){\line(0,1){15}}
-\put(103,0){\line(0,1){100}}
-\put(210,0){\line(0,1){21}}
-\put(341,0){\line(0,1){13}}
-\put(344,0){\line(0,1){5}}
-\put(379,0){\line(0,1){12}}
-\put(455,0){\line(0,1){1}}
-\put(685,0){\line(0,1){6}}
-\put(1029,0){\line(0,1){3}}
-\put(1374,0){\line(0,1){1}}
-\put(1393,0){\line(0,1){3}}
-\end{picture}
-
-{\smaller
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&14&0.925&45.66&50.89&  3&  3&  7& 28& 56&100&180 \end{tabular}
-\begin{verbatim}
-
-lowest :   1   3   7  14  28, highest: 120 180 270 360 365
-                                                                                              
-Value          1     3     7    14    28    56    90    91   100   120   180   270   360   365
-Frequency      2   134   126    62   425    91    54    22    52     3    26    13     6    14
-Proportion 0.002 0.130 0.122 0.060 0.413 0.088 0.052 0.021 0.050 0.003 0.025 0.013 0.006 0.014
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-\vbox{\noindent\textbf{forca\_compressiva}\setlength{\unitlength}{0.001in}\hfill\begin{picture}(1.5,.1)(1500,0)\linethickness{0.6pt}
-\put(0,0){\line(0,1){2}}
-\put(18,0){\line(0,1){2}}
-\put(55,0){\line(0,1){10}}
-\put(73,0){\line(0,1){8}}
-\put(91,0){\line(0,1){15}}
-\put(110,0){\line(0,1){25}}
-\put(128,0){\line(0,1){15}}
-\put(146,0){\line(0,1){40}}
-\put(165,0){\line(0,1){30}}
-\put(183,0){\line(0,1){38}}
-\put(201,0){\line(0,1){48}}
-\put(219,0){\line(0,1){35}}
-\put(238,0){\line(0,1){55}}
-\put(256,0){\line(0,1){40}}
-\put(274,0){\line(0,1){30}}
-\put(293,0){\line(0,1){55}}
-\put(311,0){\line(0,1){22}}
-\put(329,0){\line(0,1){30}}
-\put(347,0){\line(0,1){38}}
-\put(366,0){\line(0,1){50}}
-\put(384,0){\line(0,1){38}}
-\put(402,0){\line(0,1){92}}
-\put(421,0){\line(0,1){58}}
-\put(439,0){\line(0,1){60}}
-\put(457,0){\line(0,1){38}}
-\put(475,0){\line(0,1){42}}
-\put(494,0){\line(0,1){45}}
-\put(512,0){\line(0,1){60}}
-\put(530,0){\line(0,1){50}}
-\put(549,0){\line(0,1){58}}
-\put(567,0){\line(0,1){100}}
-\put(585,0){\line(0,1){62}}
-\put(603,0){\line(0,1){52}}
-\put(622,0){\line(0,1){42}}
-\put(640,0){\line(0,1){72}}
-\put(658,0){\line(0,1){52}}
-\put(677,0){\line(0,1){90}}
-\put(695,0){\line(0,1){50}}
-\put(713,0){\line(0,1){70}}
-\put(731,0){\line(0,1){58}}
-\put(750,0){\line(0,1){35}}
-\put(768,0){\line(0,1){65}}
-\put(786,0){\line(0,1){38}}
-\put(805,0){\line(0,1){32}}
-\put(823,0){\line(0,1){30}}
-\put(841,0){\line(0,1){25}}
-\put(859,0){\line(0,1){32}}
-\put(878,0){\line(0,1){22}}
-\put(896,0){\line(0,1){42}}
-\put(914,0){\line(0,1){35}}
-\put(932,0){\line(0,1){30}}
-\put(951,0){\line(0,1){32}}
-\put(969,0){\line(0,1){30}}
-\put(987,0){\line(0,1){45}}
-\put(1006,0){\line(0,1){30}}
-\put(1024,0){\line(0,1){5}}
-\put(1042,0){\line(0,1){22}}
-\put(1060,0){\line(0,1){25}}
-\put(1079,0){\line(0,1){15}}
-\put(1097,0){\line(0,1){15}}
-\put(1115,0){\line(0,1){10}}
-\put(1134,0){\line(0,1){12}}
-\put(1152,0){\line(0,1){15}}
-\put(1170,0){\line(0,1){15}}
-\put(1188,0){\line(0,1){20}}
-\put(1207,0){\line(0,1){18}}
-\put(1225,0){\line(0,1){5}}
-\put(1243,0){\line(0,1){5}}
-\put(1262,0){\line(0,1){12}}
-\put(1280,0){\line(0,1){12}}
-\put(1298,0){\line(0,1){5}}
-\put(1316,0){\line(0,1){12}}
-\put(1335,0){\line(0,1){8}}
-\put(1353,0){\line(0,1){2}}
-\put(1371,0){\line(0,1){12}}
-\put(1408,0){\line(0,1){15}}
-\put(1426,0){\line(0,1){5}}
-\put(1463,0){\line(0,1){2}}
-\put(1481,0){\line(0,1){2}}
-\end{picture}
-
-{\smaller
-\begin{tabular}{ rrrrrrrrrrrrr }
-n&missing&distinct&Info&Mean&Gmd&.05&.10&.25&.50&.75&.90&.95 \\
-1030&0&938&1&35.82&18.92&10.96&14.20&23.71&34.44&46.14&58.82&66.80 \end{tabular}
-\begin{verbatim}
-
-lowest :  2.331808  3.319827  4.565021  4.782206  4.827711
-highest: 79.400056 79.986111 80.199848 81.751169 82.599225
-\end{verbatim}
-}
-\smallskip\hrule\smallskip
-}
-}\end{spacing}
+> Analisando a nossa variável resposta podemos notar que sua distribuição se assemelha a uma normal
 
 ## Preparação dos dados
 ```{r, echo=TRUE, cache=TRUE}
@@ -726,13 +98,32 @@ teste <- dados[-inTrain,]
 treino <- treino[complete.cases(treino),]
 teste <- teste[complete.cases(teste),]
 
-## Separando a variavel resposta, categóricas e numericas
-resposta <- treino$forca_compressiva
-resposta_teste <- teste$forca_compressiva
 
-## Removendo a variável resposta
-treino <- treino[,-ncol(treino)]
-teste <- teste[,-ncol(teste)]
+## Criando dataset normalizado para avaliar diferença de resultado
+normalized_train <- treino
+normalized_teste <- teste
+
+maxTrainFeatures <- apply(normalized_train[,1:8], 2, max) #max of each feature
+minTrainFeatures <- apply(normalized_train[,1:8], 2, min) #min of each feature
+
+
+minMaxDiffTrain <- (maxTrainFeatures - minTrainFeatures)
+minMaxDiffTrain
+
+normalized_train[,1:8] <- sweep(normalized_train[,1:8], 2, minTrainFeatures, "-")
+normalized_train[,1:8] <- sweep(normalized_train[,1:8], 2, minMaxDiffTrain, "/")
+
+normalized_teste[,1:8] <- sweep(normalized_teste[,1:8], 2, minTrainFeatures, "-")
+normalized_teste[,1:8] <- sweep(normalized_teste[,1:8], 2, minMaxDiffTrain, "/")
+
+
+## Separando a variavel resposta, categóricas e numericas
+# resposta <- treino$forca_compressiva
+# resposta_teste <- teste$forca_compressiva
+
+# ## Removendo a variável resposta
+# treino <- treino[,-ncol(treino)]
+# teste <- teste[,-ncol(teste)]
 
 ## Retendo as numéricas
 Ind_numericas <- colnames(treino)[sapply(treino, is.numeric)]
@@ -757,7 +148,217 @@ corrplot(M, method='circle')
 
 ## Visualizando as correlações
 ggpairs(numericas)
+
+
+## Análise de Multicolinearidade
+
+
+modelo1 <- lm(forca_compressiva ~., data = treino)
+
+vif(modelo1)
+
+
 ```
+
+>Como podemos notar, não temos uma correlação muita alta (pensando em módulo) entre as covariáveis. Entretanto, mesmo que tivéssemos, provavelmente não poderíamos remover alguma delas, pois, todas podem ser importantes, seja em termos químicos, seja em termos legas/legislativos. \linebreak
+ Dependendo do objetivo da análise, se queremos acertar o valor da força compressevia de uma certa batelagem de cimento, ou do cimento utilizado em uma certa obra, ou se apenas queremos entender como essas variáveis influenciam na força compressiva, temos mais ou menos liberdades para modificar as covariáveis. \linebreak
+
+
+> Como não temos variáveis altamente correlacionadas, provavelmente não teremos multicolinearidade, e ainda que tívessemos, provavelmente não poderíamos remover covariáveis da análise, entretando, vamos verificar mesmo assim. /linebreak
+Para esse teste de multicolinearidade vamos utilizar a função vif (variance inflation factor) do pacote car. /linebreak
+Como não temos valores muito altos (a cima de 10) de vif para nenhuma das covariáveis, vamos assumir que não sofremos do problema de multicolinearidade
+
+## Detecção de Outliers
+
+```{r echo=TRUE}
+## Outliers em X
+
+X <- X <- treino[, 1:8] #subset(treino, select = -c("forca_compressiva"))
+
+H <- data.matrix(X) %*% solve((t(data.matrix(X)) %*% data.matrix(X))) %*% t(data.matrix(X))
+
+hbar <- sum(diag(H)) / nrow(X)
+
+criterio_oulier <- 2*hbar
+
+sum(diag(H) > criterio_oulier)
+
+
+sum(diag(H) > 0.5)
+
+sum((diag(H) < criterio_oulier) & ((diag(H) > 0.2)))
+
+sum(diag(H) < 0.2) / nrow(X)
+
+
+outlierTest(modelo1)
+
+```
+
+> Por esse método temos possíveis 55 outliers
+> Entretando, utilizando critérios alternativos:
+
+* h_ii > 0.5 outlier
+* 0.2 < h_ii < 0.5 Moderad -> analisar
+* h_ii < 0.2 não é outlier
+
+> Temos que todos os valores de diag(H) são inferiores a 0.2.
+
+>Agora, utilizando a função outliers do pacote car, temos o seguinte:
+
+* Utilizando o mesmo modelo que foi utilizado para a análise de multicolinearidade, não temos nenhum ponto que possa ser considerado um outlier.
+
+> Logo, como em 2 dos 3 testes não temos nenhum ponto identificado como outlier, vamos considerar que não temos nenhuma observação que deveríamos considerar outlier
 
 
 ## Modelagem
+```{r echo=TRUE}
+
+f1 <-
+  formula(
+    forca_compressiva ~ cimento + escoria + cinza + agua +
+      super_plastificante + agregador_grosso +
+      agregador_fino + idade
+  )
+
+
+f1_log <-
+  formula(
+    log(forca_compressiva) ~ cimento + escoria + cinza + agua +
+      super_plastificante + agregador_grosso +
+      agregador_fino + idade
+  )
+
+f2 <- formula(
+  forca_compressiva ~ cimento + escoria + cinza + agua +
+    super_plastificante + agregador_grosso + agregador_fino + idade +
+    I(cimento ^ 2) + I(escoria ^ 2) + I(cinza ^ 2) +
+    I(agua ^ 2) + I(super_plastificante ^2) +
+    I(agregador_grosso ^ 2) + I(agregador_fino ^ 2) + I(idade ^ 2)
+  )
+
+f2_log <- formula(
+  log(forca_compressiva) ~ cimento + escoria + cinza + agua +
+    super_plastificante + agregador_grosso + agregador_fino + idade +
+    I(cimento ^ 2) + I(escoria ^ 2) + I(cinza ^ 2) +
+    I(agua ^ 2) + I(super_plastificante ^2) +
+    I(agregador_grosso ^ 2) + I(agregador_fino ^ 2) + I(idade ^ 2)
+  )
+
+formulas <- c(f1, f2)
+
+
+for (f in formulas) {
+  ##model
+  model <- lm(formula = f, data=treino)
+  
+  model_norm <- lm(formula = f, data=normalized_train)
+  
+  ##predicao treino
+  treinoPred     <- predict(model, treino)
+  treinoPredNorm <- predict(model_norm, normalized_train)
+  
+  ##predicao teste
+  testePred     <- predict(model, teste)
+  testePredNorm <- predict(model_norm, normalized_teste)
+  
+  
+  mae_treino  <- round(MAE(treino$forca_compressiva, treinoPred), 3)
+  mae_teste   <- round(MAE(teste$forca_compressiva, testePred), 3)
+  
+  
+  rmse_treino <- round(RMSE(treino$forca_compressiva, treinoPred), 3)
+  rmse_teste  <- round(RMSE(teste$forca_compressiva, testePred), 3)
+  
+  
+  mae_norm_treino  <- round(MAE(normalized_train$forca_compressiva, treinoPredNorm), 3)
+  mae_norm_teste   <- round(MAE(normalized_teste$forca_compressiva, testePredNorm), 3)
+  
+  rmse_norm_treino <- round(RMSE(normalized_train$forca_compressiva, treinoPredNorm), 3)
+  rmse_norm_teste  <- round(RMSE(normalized_teste$forca_compressiva, testePredNorm), 3)
+  
+  print(f)
+  
+  print(paste0('DATASET NÂO NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_treino, ' --  ', mae_teste))
+  print(paste0('RMSE :', rmse_treino, ' -- ', rmse_teste))
+
+  print(paste0('DATASET NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_norm_teste, ' -- ', mae_norm_teste))
+  print(paste0('RMSE :', rmse_norm_treino, ' -- ', rmse_norm_teste))
+  
+  print('MUDANDO DE MODELO')
+  print('')
+  print('')
+  print('')
+
+}
+
+formulas_log <- c(f1_log, f2_log)
+
+for (f in formulas_log) {
+  ##model
+  model <- lm(formula = f, data=treino)
+  
+  model_norm <- lm(formula = f, data=normalized_train)
+  
+  ##predicao treino
+  treinoPred     <- predict(model, treino)
+  treinoPredNorm <- predict(model_norm, normalized_train)
+  
+  ##predicao teste
+  testePred     <- predict(model, teste)
+  testePredNorm <- predict(model_norm, normalized_teste)
+  
+  
+  mae_treino  <- round(MAE(log(treino$forca_compressiva), treinoPred), 3)
+  mae_teste   <- round(MAE(log(teste$forca_compressiva), testePred), 3)
+  
+  
+  rmse_treino <- round(RMSE(log(treino$forca_compressiva), treinoPred), 3)
+  rmse_teste  <- round(RMSE(log(teste$forca_compressiva), testePred), 3)
+  
+  
+  mae_norm_treino  <- round(MAE(log(normalized_train$forca_compressiva), treinoPredNorm), 3)
+  mae_norm_teste   <- round(MAE(log(normalized_teste$forca_compressiva), testePredNorm), 3)
+  
+  rmse_norm_treino <- round(RMSE(log(normalized_train$forca_compressiva), treinoPredNorm), 3)
+  rmse_norm_teste  <- round(RMSE(log(normalized_teste$forca_compressiva), testePredNorm), 3)
+  
+  print(f)
+  
+  print(paste0('DATASET NÂO NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_treino, ' --  ', mae_teste))
+  print(paste0('RMSE :', rmse_treino, ' -- ', rmse_teste))
+  
+  print(paste0('DATASET NORMALIZADO (TREINO -- TESTE): \n'))
+  print(paste0('MAE :', mae_norm_teste, ' -- ', mae_norm_teste))
+  print(paste0('RMSE :', rmse_norm_treino, ' -- ', rmse_norm_teste))
+  
+  print('MUDANDO DE MODELO')
+  print('')
+  print('')
+  print('')
+  
+}
+
+
+```
+>Temos aqui que aplicando o log na variável resposta, analisando MAE e RMSE, temos um melhor desempenho. Notamos também que normalizar ou não os dados fez pouca diferença, entretanto os modelos com termos quadráticos tiverem um melhor resultado
+
+## Análise de Resíduos
+```{r echo=TRUE}
+
+### A partir do tópico anterior, selecionamos o modelo a baixo. Vamos utilizá-lo para fazer a análise de resíduos
+
+
+final_model <- lm(formula = f1, data = treino)
+
+e <- resid(final_model)
+
+
+plot(log(treino$forca_compressiva), e,
+     ylab="Resíduos", xlab="Valor Observado", 
+     main="Análise de Resíduos") 
+abline(0, 0)            
+```
