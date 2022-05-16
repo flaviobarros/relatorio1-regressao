@@ -823,7 +823,7 @@ Na análise de redundância utilizamos regressões de cada variável tendo as ou
 redun(~ ., r2 = .8, type = "adjusted", data = numericas)
 ```
 
-Como resultado dessa análise as variáveis cimento, considerando como critério um $R^2 $ água e cinza podem ser facilmente preditas a partir das outras, portanto serão excluídas.
+Como resultado dessa análise as variáveis cimento, considerando como critério um $R^2$ água e cinza poderiam ser facilmente preditas a partir das outras, portanto seriam excluídas. Entretando são variáveis fundamentais na produção do concreto e o $R^2 < 0,9$. Portanto não excluimos nenhuma variável.
 
 ### Estrutura das variáveis com PCA
 
@@ -1008,6 +1008,34 @@ par(mfrow=c(2,2))
 plot(final_model)
 ```
 
+## Detecção de outliers e medidas influentes
+
+Com base nos gráficos do modelo final podemos ainda nos aprofundar nas medidas influentes. Vemos que estão indicadas nos gráficos algumas observações influentes baseadas em *Leverage* e *Cook's distance*. Vamos então analisar alguns gráficos.
+
+```{r, eval=TRUE, echo=TRUE}
+## Carregando os pacotes necessários
+require(olsrr)
+
+## Distância de Cook
+ols_plot_cooksd_bar(final_model)
+```
+
+De acordo com esse critério há muitas observações que podem ser classificadas como outliers. Essas observações, nesse critério, tem influência forte sobre os valores ajustados.
+
+```{r, echo=TRUE, cache=TRUE}
+## Dfbeta
+ols_plot_dfbetas(model)
+```
+
+Com os dfbetas conseguimos entender quais medidas são influentes em um dado $\beta_i$. Aqui vemos que em todas as variáveis há medidas muito influentes.
+
+```{r, echo=TRUE, eval=TRUE}
+## Comparando resíduo e leverage
+ols_plot_resid_lev(model)
+```
+
+Aqui podemos observar que outliers e medidas influentes são bastante diferentes. Há medidas que são fortemente influentes e ainda são outliers, o que representa o pior caso. Entretanto simples outliers podem não ser tão prejudiciais para o modelo. Neste caso em específico decidimos não remover nenhuma observação devido a natureza não linear dos dados. No fim das contas estamos ajustando um modelo de regressão linear a um conjunto de dados ajustado originalmente para uma rede neural. 
+
 ### Relaxando a linearidade com splines
 ```{r, echo=TRUE, eval=TRUE, cache=TRUE}
 ## Carregando os pacotes
@@ -1019,9 +1047,9 @@ d <- datadist(dados)
 options(datadist = "d")
 
 ## Ajustando um modelo com splines cúbicos
-mod1 <- ols(forca_compressiva ~ rcs(cimento, 10) + rcs(escoria, 10) + rcs(cinza, 10) + 
-                  rcs(agua, 10) + rcs(super_plastificante, 10) + rcs(agregador_grosso, 10) +
-                  rcs(agregador_fino, 10) + rcs(idade, 10),
+mod1 <- ols(forca_compressiva ~ rcs(cimento, 5) + rcs(escoria, 5) + rcs(cinza, 5) + 
+                  rcs(agua, 5) + rcs(super_plastificante, 5) + rcs(agregador_grosso, 5) +
+                  rcs(agregador_fino, 5) + rcs(idade, 5),
               data = dados, x = TRUE, y = TRUE)
 
 ## Avaliando o modelo
@@ -1029,7 +1057,11 @@ mod1
 anova(mod1)
 summary(mod1)
 plot(summary(mod1))
+```
 
+De acordo com o modelo é possível entender o impacto de cada variável na força compressiva. Nesse gráfico está registrada a variação interquartílica e o impacto na variável resposta. É fácil observar que a idade, cimento, cinza e escória, componentes fundamentais na produção do concreto, são as variáveis mais importantes. 
+
+```{r, cache=TRUE, echo=TRUE}
 ## Fazendo os plots dos resíduos
 both <- data.frame(residuos = resid(mod1), ajustado = fitted (mod1))
 both$cimento <- dados$cimento
@@ -1045,53 +1077,43 @@ geom_abline(intercept = mean(resid(mod1)), slope = sd(resid(mod1))) + yl
 gridExtra::grid.arrange( p1 , p2 , p3 , p4 , ncol =2)
 ```
 
+Aqui é importante observar que não há grandes padrões nos resíduos em comparação com as variáveis mais importantes como o número de dias e a quantidade de cimento. Entretanto, especialmente nos valores mais baixos de força do concreto vemos algumas distorções. É possível que serja necessário utilizar modelos com ainda mais linearidade ou apelar para modelos de aprendizado de máquina.
 
-## Detecção de Outliers
+### Ouliers e medidas influentes
 
-```{r echo=TRUE}
-## Carregando os pacotes necessários
-require(car)
+```{r cache=TRUE, eval=TRUE}
+mod1_plot <- mod1
+class(mod1_plot) <- "lm"
+## Comparando resíduo e leverage
+ols_plot_resid_lev(model)
+```
+Da mesma forma que o modelo anterior, sem splines e com polinômios, há também medidas influentes e outliers.
 
-## Outliers em X
-X <- treino[, 1:8] #subset(treino, select = -c("forca_compressiva"))
+## Comparando os modelos com splines e com polinômios 
 
-H <- data.matrix(X) %*% 
-  solve((t(data.matrix(X)) %*% 
-           data.matrix(X))) %*% 
-  t(data.matrix(X))
+```{r, eval=TRUE, cache=TRUE}
+##predicao teste
+  testePred_pol    <- predict(final_model, teste)
+  testePred_spline <- predict(mod1, teste)
+  
+## RMSE
+  rmse_pol <- round(RMSE(teste$forca_compressiva, testePred_pol), 3)
+  rmse_spline <- round(RMSE(teste$forca_compressiva, testePred_spline), 3)
+  
+## MAE
+  mae_pol <- round(MAE(teste$forca_compressiva, testePred_pol), 3)
+  mae_spline <- round(MAE(teste$forca_compressiva, testePred_spline), 3)
+  
+## Data.frame com os resultados finais
+resultados <- data.frame(MAE = c(mae_spline, mae_pol), RMSE = c(rmse_spline, rmse_pol), row.names = c("Spline", "Polinômio"))
 
-hbar <- sum(diag(H))/nrow(X)
-
-criterio_oulier <- 2*hbar
-
-sum(diag(H) > criterio_oulier)
-
-
-sum(diag(H) > 0.5)
-
-sum((diag(H) < criterio_oulier) & ((diag(H) > 0.2)))
-
-sum(diag(H) < 0.2) / nrow(X)
-
-
-outlierTest(final_model)
+## Mostrando o resultado
+kable(resultados)
 ```
 
-> Por esse método temos possíveis 55 outliers
-> Entretando, utilizando critérios alternativos:
+## Conclusão
 
-* h_ii > 0.5 outlier
-* 0.2 < h_ii < 0.5 Moderad -> analisar
-* h_ii < 0.2 não é outlier
-
-> Temos que todos os valores de diag(H) são inferiores a 0.2.
-
->Agora, utilizando a função outliers do pacote car, temos o seguinte:
-
-* Utilizando o mesmo modelo que foi utilizado para a análise de multicolinearidade, não temos nenhum ponto que possa ser considerado um outlier.
-
-> Logo, como em 2 dos 3 testes não temos nenhum ponto identificado como outlier, vamos considerar que não temos nenhuma observação que deveríamos considerar outlier
-
+O modelo com splines é levemente superior. A vantagem se deve a forma mais inteligente de incluir a não-linearidade por meio dos splines que se comportam melhor que os polinômios, especialmente nos limites do range dos dados.
 
 
 
