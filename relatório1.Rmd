@@ -27,7 +27,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r echo=TRUE, warning=FALSE, message=FALSE}
+```{r echo=TRUE, warning=FALSE, message=FALSE, cache=TRUE}
 ## Carregando os pacotes
 require(readxl)
 require(corrplot)
@@ -744,7 +744,15 @@ categorias <- treino[,Ind_categoricas]
 
 ## Redução de dimensionalidade
 
+### Estrutura de correlações
+
+Como são todas variáveis numéricas inicialmente veremos na matriz de correlação se há algumas relação mais forte entre pares de variáveis. Se houver poderemos escolher somente uma das variáveis pois adiconar outra variável fortemente correlacionanda não adicionaria novas informações e traria dificuldades no processo de estimação em virtude de possível multicolinearidade.
+
 ```{r echo=TRUE}
+## Adicionando pacote corrplot
+require(corrplot)
+require(GGally)
+
 ## Analisando as correlações
 M <- cor(numericas, use = 'complete.obs')
 corrplot(M, method='number', diag = T, number.cex = 0.8)
@@ -758,6 +766,75 @@ corrplot(M, method='circle')
 ## Visualizando as correlações
 ggpairs(numericas)
 ```
+Como as maiores correlações foram de $0,65$, não podemos afirmar que há pares de variáveis redundantes. Portanto optamos por não retirar nenhuma variável nessa etapa.
 
+### Análise de redundância
+
+Na análise de redundância utilizamos regressões de cada variável tendo as outras como suas preditoras, inclusive com componentes não lineares via *splines* cúbicos. Essa análise é superior ao correlograma no sentido de que considera não somente as relações lineares dois a dois, mas também a capacidade das preditoras fornecerem informações sobre as outras preditoras de forma conjunta.
+
+```{r, echo=TRUE, cache=TRUE}
+redun(~ ., r2 = .8, type = "adjusted", data = numericas)
+```
+Como resultado dessa análise as variáveis cimento, considerando como critério um $R^2 $ água e cinza podem ser facilmente preditas a partir das outras, portanto serão excluídas.
+
+### Estrutura das variáveis com PCA
+
+```{r, echo=TRUE, cache=TRUE}
+# Calculando o PCA
+prin.raw <- princomp (~ ., cor = TRUE , data = numericas)
+plot (prin.raw, type = 'lines' , main = ' ' , ylim = c (0 ,3))
+
+# Adicionando a variância cumulativa explicada
+addscree <- function (x , npcs = min (10 , length (x$sdev)) ,
+                      plotv = FALSE ,
+                      col =1 , offset = .8 , adj =0 , pr = FALSE) {
+                        vars <- x$sdev^2
+                        cumv <- cumsum(vars)/sum(vars)
+                        if (pr) print(cumv)
+                        text (1: npcs , vars [1: npcs ] + offset*par ('cxy')[2] ,
+                        as.character(round(cumv [1: npcs ], 2)),
+                        srt =45 , adj = adj , cex = .65 , xpd = NA , col = col)
+                        if ( plotv ) lines (1: npcs , vars [1: npcs ], type = ' b ' , col = col )
+}
+addscree (prin.raw)
+```
+Não parece haver uma estrutura onde as primeiras componente dominam as outras. Portanto com base nessa análise ainda não teríamos indicação de eliminar variáveis.
 
 ## Modelagem
+
+```{r, echo=TRUE, eval=TRUE, cache=TRUE}
+## Carregando os pacotes
+require(ggplot2)
+
+## Definindo as estatísticas de resumo para os plots
+d <- datadist(dados)
+options(datadist = "d")
+
+## Carregando pacotes necessários
+require(rms)
+
+mod1 <- ols(forca_compressiva ~ rcs(cimento, 10) + rcs(escoria, 10) + rcs(cinza, 10) + 
+                  rcs(agua, 10) + rcs(super_plastificante, 10) + rcs(agregador_grosso, 10) +
+                  rcs(agregador_fino, 10) + rcs(idade, 10),
+              data = dados, x = TRUE, y = TRUE)
+
+mod1
+anova(mod1)
+summary(mod1)
+plot(summary(mod1))
+
+## Fazendo os plots dos resíduos
+both <- data.frame(residuos = resid(mod1), ajustado = fitted (mod1))
+both$cimento <- dados$cimento
+both$dia <- dados$idade
+
+yl <- ylab ('Residuals')
+p1 <-  ggplot(both , aes( x = ajustado , y = residuo)) + geom_point() + yl
+p2 <- ggplot(both , aes( x = cimento , y = residuo )) + geom_point() + yl
+p3 <- ggplot(both , aes( x = dia , y = residuo )) + yl + ylim ( -100 , 100) +
+stat_summary(fun.data = "mean_sdl", geom = 'smooth', fun)
+p4 <- ggplot(both , aes(sample = residuo)) + stat_qq() +
+geom_abline(intercept = mean(resid(mod1)), slope = sd(resid(mod1))) + yl
+gridExtra::grid.arrange( p1 , p2 , p3 , p4 , ncol =2)
+```
+
