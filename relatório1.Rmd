@@ -1050,7 +1050,7 @@ options(datadist = "d")
 mod1 <- ols(forca_compressiva ~ rcs(cimento, 5) + rcs(escoria, 5) + rcs(cinza, 5) + 
                   rcs(agua, 5) + rcs(super_plastificante, 5) + rcs(agregador_grosso, 5) +
                   rcs(agregador_fino, 5) + rcs(idade, 5),
-              data = dados, x = TRUE, y = TRUE)
+              data = treino, x = TRUE, y = TRUE)
 
 ## Avaliando o modelo
 mod1
@@ -1064,8 +1064,8 @@ De acordo com o modelo é possível entender o impacto de cada variável na for�
 ```{r, cache=TRUE, echo=TRUE}
 ## Fazendo os plots dos resíduos
 both <- data.frame(residuos = resid(mod1), ajustado = fitted (mod1))
-both$cimento <- dados$cimento
-both$dia <- dados$idade
+both$cimento <- treino$cimento
+both$dia <- treino$idade
 
 yl <- ylab ('Residuals')
 p1 <-  ggplot(both , aes( x = ajustado , y = residuos)) + geom_point() + yl
@@ -1106,6 +1106,20 @@ Da mesma forma que o modelo anterior, sem splines e com polinômios, há também
   
 ## Data.frame com os resultados finais
 resultados <- data.frame(MAE = c(mae_spline, mae_pol), RMSE = c(rmse_spline, rmse_pol), row.names = c("Spline", "Polinômio"))
+
+## Comparando os dois plots
+par(mfrow = c(1,2))
+plot(x = teste$forca_compressiva, y = testePred_pol, main = "Polinomial", 
+     ylab = "Predito",
+     xlab = "Observado",
+     xlim = c(0,100), ylim = c(0,100))
+abline(a=0, b=1, "dashed")
+
+plot(x = teste$forca_compressiva, y = testePred_spline, main = "Spline",
+     ylab = "Predito",
+     xlab = "Observado",
+     xlim = c(0,100), ylim = c(0,100))
+abline(a=0, b=1, "dashed")
 
 ## Mostrando o resultado
 kable(resultados)
